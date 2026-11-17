@@ -67,6 +67,7 @@ object PluginInstaller {
         // Clear any prior version's presets + live policies first (clean update).
         ExternalProfileStore.removePresetsOwnedBy(prefs, owner)
         LivePolicyStore.removeByOwner(prefs, entry.id)
+        ExternalGrantStore.removeByOwner(prefs, entry.id)
 
         val list = readPresets(prefs)
         imported.presets.forEach { list.put(presetToJson(it, owner)) }
@@ -81,6 +82,11 @@ object PluginInstaller {
         // uninstall removes exactly these.
         LivePolicyStore.putAll(prefs, entry.id, imported.livePolicies)
 
+        // External-API grants for the plugin's companion app (apply its presets,
+        // start reactive effects). Installing the plugin is the user's consent;
+        // owner-tagged so uninstall/update removes exactly these.
+        ExternalGrantStore.putAll(prefs, entry.id, imported.externalGrants)
+
         PluginPrefs.setInstalled(prefs, entry.id, entry.version)
         return Result.Success(imported.presets.map { it.name })
     }
@@ -91,6 +97,7 @@ object PluginInstaller {
             AppProfileManager(prefs).removeMappingsReferencing(removed)
         }
         LivePolicyStore.removeByOwner(prefs, entry.id)
+        ExternalGrantStore.removeByOwner(prefs, entry.id)
         PluginPrefs.removeInstalled(prefs, entry.id)
         return Result.Success(removed)
     }
